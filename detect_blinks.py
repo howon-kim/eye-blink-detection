@@ -58,6 +58,13 @@ predictor = dlib.shape_predictor(args["shape_predictor"])
 # right eye, respectively
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+#other part
+(mouth_S, mouth_E) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
+(inmouth_S, inmouth_E) = face_utils.FACIAL_LANDMARKS_IDXS["inner_mouth"]
+(eyebrowR_S, eyebrowR_E) = face_utils.FACIAL_LANDMARKS_IDXS["right_eyebrow"]
+(eyebrowL_S, eyebrowL_E) = face_utils.FACIAL_LANDMARKS_IDXS["left_eyebrow"]
+(nose_S, nose_E) = face_utils.FACIAL_LANDMARKS_IDXS["nose"]
+(jaw_S, jaw_E) = face_utils.FACIAL_LANDMARKS_IDXS["jaw"]
 
 # start the video stream thread
 print("[INFO] starting video stream thread...")
@@ -99,9 +106,17 @@ while True:
 		rightEye = shape[rStart:rEnd]
 		leftEAR = eye_aspect_ratio(leftEye)
 		rightEAR = eye_aspect_ratio(rightEye)
-
+		#other part
+		Mouth = shape[mouth_S:mouth_E]
+		inner_Mouth = shape[inmouth_S:inmouth_E]
+		right_Eyebrow = shape[eyebrowR_S:eyebrowR_E]
+		left_Eyebrow = shape[eyebrowL_S:eyebrowL_E]
+		Nose = shape[nose_S:nose_E]
+		Jaw = shape[jaw_S:jaw_E]
 		# average the eye aspect ratio together for both eyes
 		ear = (leftEAR + rightEAR) / 2.0
+
+		#area = cv2.contourArea(leftEye)
 
 		# compute the convex hull for the left and right eye, then
 		# visualize each of the eyes
@@ -109,6 +124,19 @@ while True:
 		rightEyeHull = cv2.convexHull(rightEye)
 		cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
 		cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+		#other part
+		MouthHull = cv2.convexHull(Mouth)
+		cv2.drawContours(frame, [MouthHull], -1, (0, 255, 0), 1)
+		inner_MouthHull = cv2.convexHull(inner_Mouth)
+		cv2.drawContours(frame, [inner_MouthHull], -1, (0, 0, 255), 1)
+		right_EyebrowHull = cv2.convexHull(right_Eyebrow)
+		cv2.drawContours(frame, [right_EyebrowHull], -1, (0, 255, 0), 1)
+		left_EyebrowHull = cv2.convexHull(left_Eyebrow)
+		cv2.drawContours(frame, [left_EyebrowHull], -1, (0, 255, 0), 1)
+		NoseHull = cv2.convexHull(Nose)
+		cv2.drawContours(frame, [NoseHull], -1, (0, 255, 0), 1)
+		JawHull = cv2.convexHull(Jaw)
+		cv2.drawContours(frame, [JawHull], -1, (0, 255, 0), 1)
 
 		# check to see if the eye aspect ratio is below the blink
 		# threshold, and if so, increment the blink frame counter
