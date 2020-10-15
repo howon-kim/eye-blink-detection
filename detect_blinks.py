@@ -19,6 +19,7 @@ import time
 import dlib
 import cv2
 import time
+import csv
 
 def updateGraph(x, y):
     global curve, ptr, Xm    
@@ -29,7 +30,6 @@ def updateGraph(x, y):
     curve.setData(Xm)                     # set the curve with this data
     curve.setPos(ptr,0)                   # set x position in the graph to 0
     QtGui.QApplication.processEvents()    # you MUST process the plot now
-
 
 def graphEye(x, y):
 	plt.xticks(rotation=45, ha='right')
@@ -163,6 +163,85 @@ def videoReading():
 	cv2.destroyAllWindows()
 	vs.stop()
 
+def faceReading():
+	# Count Time
+	start_time = time.time()
+
+	# loop over frames from the video stream
+	while True:
+		# if this is a file video stream, then we need to check if
+		# there any more frames left in the buffer to process
+		if fileStream and not vs.more():
+			break
+
+		# grab the frame from the threaded video file stream, resize
+		# it, and convert it to grayscale channels)
+		frame = vs.read()
+		frame = imutils.resize(frame, width=450)
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+		# detect faces in the grayscale frame
+		rects = detector(gray, 0)
+
+		# loop over the face detections
+		for rect in rects:
+			# determine the facial landmarks for the face region, then
+			# convert the facial landmark (x, y)-coordinates to a NumPy
+			# array
+			shape = predictor(gray, rect)
+			shape = face_utils.shape_to_np(shape)
+
+			# extract the face component coordinates, 
+			leftEye = shape[lStart:lEnd]
+			rightEye = shape[rStart:rEnd]
+			mouth = shape[mouth_S:mouth_E]
+			innerMouth = shape[inmouth_S:inmouth_E]
+			rightEyebrow = shape[eyebrowR_S:eyebrowR_E]
+			leftEyebrow = shape[eyebrowL_S:eyebrowL_E]
+			nose = shape[nose_S:nose_E]
+			jaw = shape[jaw_S:jaw_E]
+
+			#print(str(lStart) + " " + str(lEnd))
+			# average the eye aspect ratio together for both eyes
+			elapsed = time.time() - start_time
+			with open('test.csv', "a") as f:
+				writer = csv.writer(f)
+				writer.writerow(([elapsed] + [item for sublist in shape for item in sublist]))
+			# compute the convex hull for the left and right eye, then
+			# visualize each of the eyes
+			leftEyeHull = cv2.convexHull(leftEye)
+			rightEyeHull = cv2.convexHull(rightEye)
+			cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+			cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+			mouthHull = cv2.convexHull(mouth)
+			cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
+			innerMouthHull = cv2.convexHull(innerMouth)
+			cv2.drawContours(frame, [innerMouthHull], -1, (0, 0, 255), 1)
+			rightEyebrowHull = cv2.convexHull(rightEyebrow)
+			cv2.drawContours(frame, [rightEyebrowHull], -1, (0, 255, 0), 1)
+			leftEyebrowHull = cv2.convexHull(leftEyebrow)
+			cv2.drawContours(frame, [leftEyebrowHull], -1, (0, 255, 0), 1)
+			noseHull = cv2.convexHull(nose)
+			cv2.drawContours(frame, [noseHull], -1, (0, 255, 0), 1)
+			jawHull = cv2.convexHull(jaw)
+			cv2.drawContours(frame, [jawHull], -1, (0, 255, 0), 1)
+			
+			# draw the total number of blinks on the frame along with
+			# the computed eye aspect ratio for the frame
+			cv2.putText(frame, "Time: {}".format(elapsed), (10, 250),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+
+		cv2.imshow("Frame", frame)
+		key = cv2.waitKey(1) & 0xFF
+
+		# if the `q` key was pressed, break from the loop
+		if key == ord("q"):
+			break
+			# do a bit of cleanup
+
+	cv2.destroyAllWindows()
+	vs.stop()
 
 if __name__ == "__main__":
 
@@ -174,40 +253,36 @@ if __name__ == "__main__":
 		help="path to input video file")
 	args = vars(ap.parse_args())
 
-
 	# initialize dlib's face detector (HOG-based) and then create
 	# the facial landmark predictor
 	print("[INFO] loading facial landmark predictor...")
 	detector = dlib.get_frontal_face_detector()
 	predictor = dlib.shape_predictor(args["shape_predictor"])
 
-	# grab the indexes of the facial landmarks for the left and
-	# right eye, respectively
+	# grab the indexes of the facial landmarks
 	(lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 	(rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+	(mouth_S, mouth_E) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
+	(inmouth_S, inmouth_E) = face_utils.FACIAL_LANDMARKS_IDXS["inner_mouth"]
+	(eyebrowR_S, eyebrowR_E) = face_utils.FACIAL_LANDMARKS_IDXS["right_eyebrow"]
+	(eyebrowL_S, eyebrowL_E) = face_utils.FACIAL_LANDMARKS_IDXS["left_eyebrow"]
+	(nose_S, nose_E) = face_utils.FACIAL_LANDMARKS_IDXS["nose"]
+	(jaw_S, jaw_E) = face_utils.FACIAL_LANDMARKS_IDXS["jaw"]
 
 	# start the video stream thread
 	print("[INFO] starting video stream thread...")
-	vs = FileVideoStream(args["video"]).start()
-	fileStream = True
-	# vs = VideoStream(src=0).start()
+	
+	# Purpose for reading the video file
+	# vs = FileVideoStream(args["video"]).start()
+	# fileStream = True
+
+	# Purpose for streaming the video from the camera
+	vs = VideoStream(src=0).start()
 	# vs = VideoStream(usePiCamera=True).start()
-	# fileStream = False
+	fileStream = False
 	time.sleep(1.0)
 
-	# Initialize Pyqtgraph
-	app = QtGui.QApplication([])     
-	win = pg.GraphicsWindow(title="Signal from serial port") # creates a window
-	p = win.addPlot(title="Realtime plot")  # creates empty space for the plot in the window
-	curve = p.plot()                        # create an empty "plot" (a curve to plot)
-	windowWidth = 500                       # width of the window displaying the curve
-	Xm = linspace(0,0,windowWidth)          # create array that will contain the relevant time series     
-	ptr = -windowWidth                      # set first x position
-
-
-	videoReading()
+	# Execute the function
+	faceReading()
 
 	# Print the result
-	pg.QtGui.QApplication.exec_()
-	print("Total Blink: {0}".format(TOTAL))
-
