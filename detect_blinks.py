@@ -7,12 +7,37 @@ from scipy.spatial import distance as dist
 from imutils.video import FileVideoStream
 from imutils.video import VideoStream
 from imutils import face_utils
+from pyqtgraph.Qt import QtGui, QtCore
+from numpy import *
+import pyqtgraph as pg
 import numpy as np
+import datetime as dt
+import matplotlib.pyplot as plt
 import argparse
 import imutils
 import time
 import dlib
 import cv2
+import time
+import csv
+
+def updateGraph(x, y):
+    global curve, ptr, Xm    
+    Xm[:-1] = Xm[1:]                      # shift data in the temporal mean 1 sample left
+    value = y[len(y) - 1]					          # read line (single value) from the serial port
+    Xm[-1] = float(value)                 # vector containing the instantaneous values      
+    ptr += 1                              # update x position for displaying the curve
+    curve.setData(Xm)                     # set the curve with this data
+    curve.setPos(ptr,0)                   # set x position in the graph to 0
+    QtGui.QApplication.processEvents()    # you MUST process the plot now
+
+def graphEye(x, y):
+	plt.xticks(rotation=45, ha='right')
+	plt.subplots_adjust(bottom=0.30)
+	plt.title('Time')
+	plt.ylabel('Eye Aspect Ratio')
+	plt.plot(x, y, linewidth=5, color='r')
+	plt.pause(0.01)
 
 def eye_aspect_ratio(eye):
 	# compute the euclidean distances between the two sets of
@@ -29,6 +54,12 @@ def eye_aspect_ratio(eye):
 
 	# return the eye aspect ratio
 	return ear
+	
+def drawPartLine(frame, part):
+	PartHull = cv2.convexHull(part)
+	cv2.drawContours(frame, [PartHull], -1, (0, 255, 0), 1)
+
+#<<<<<<< HEAD
  
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -125,19 +156,14 @@ while True:
 		cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
 		cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 		#other part
-		MouthHull = cv2.convexHull(Mouth)
-		cv2.drawContours(frame, [MouthHull], -1, (0, 255, 0), 1)
-		inner_MouthHull = cv2.convexHull(inner_Mouth)
-		cv2.drawContours(frame, [inner_MouthHull], -1, (0, 0, 255), 1)
-		right_EyebrowHull = cv2.convexHull(right_Eyebrow)
-		cv2.drawContours(frame, [right_EyebrowHull], -1, (0, 255, 0), 1)
-		left_EyebrowHull = cv2.convexHull(left_Eyebrow)
-		cv2.drawContours(frame, [left_EyebrowHull], -1, (0, 255, 0), 1)
-		NoseHull = cv2.convexHull(Nose)
-		cv2.drawContours(frame, [NoseHull], -1, (0, 255, 0), 1)
-		JawHull = cv2.convexHull(Jaw)
-		cv2.drawContours(frame, [JawHull], -1, (0, 255, 0), 1)
-		cv2.rectangle(frame, (rect.left(), rect.top()),(rect.right(), rect.bottom()), (0,0,255), 2)
+		drawPartLine(frame, Mouth)
+		drawPartLine(frame, inner_Mouth)
+		drawPartLine(frame, right_Eyebrow)
+		drawPartLine(frame, left_Eyebrow)
+		drawPartLine(frame, Nose)
+		drawPartLine(frame, Jaw)
+		cv2.rectangle(frame, (rect.left(), rect.top()),
+			(rect.right(), rect.bottom()), (0,0,255), 2)
 
 		# check to see if the eye aspect ratio is below the blink
 		# threshold, and if so, increment the blink frame counter
@@ -173,3 +199,237 @@ while True:
 # do a bit of cleanup
 cv2.destroyAllWindows()
 vs.stop()
+#=======
+
+
+def videoReading():
+	# define two constants, one for the eye aspect ratio to indicate
+	# blink and then a second constant for the number of consecutive
+	# frames the eye must be below the threshold
+	EYE_AR_THRESH = 0.23 # 0.23 was the default.
+	EYE_AR_CONSEC_FRAMES = 3
+
+	# initialize the frame counters and the total number of blinks
+	COUNTER = 0
+	TOTAL = 0
+
+	# Count Time
+	start_time = time.time()
+
+	# Graph Axis Initializing
+	x, y = list(), list()
+
+	# loop over frames from the video stream
+	while True:
+		# if this is a file video stream, then we need to check if
+		# there any more frames left in the buffer to process
+		if fileStream and not vs.more():
+			break
+
+		# grab the frame from the threaded video file stream, resize
+		# it, and convert it to grayscale
+		# channels)
+		frame = vs.read()
+
+		##frame = imutils.resize(frame, width=450)
+		
+		## Rotation IF NEEDED
+		frame = imutils.rotate(frame, 270, scale=1)
+
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+		# detect faces in the grayscale frame
+		rects = detector(gray, 0)
+
+
+		# loop over the face detections
+		for rect in rects:
+			# determine the facial landmarks for the face region, then
+			# convert the facial landmark (x, y)-coordinates to a NumPy
+			# array
+			shape = predictor(gray, rect)
+			shape = face_utils.shape_to_np(shape)
+
+			# extract the left and right eye coordinates, then use the
+			# coordinates to compute the eye aspect ratio for both eyes
+			leftEye = shape[lStart:lEnd]
+			rightEye = shape[rStart:rEnd]
+			leftEAR = eye_aspect_ratio(leftEye)
+			rightEAR = eye_aspect_ratio(rightEye)
+
+			# average the eye aspect ratio together for both eyes
+			ear = (leftEAR + rightEAR) / 2.0
+			elapsed = time.time() - start_time
+			x.append(elapsed)
+			y.append(ear)
+
+			# compute the convex hull for the left and right eye, then
+			# visualize each of the eyes
+			leftEyeHull = cv2.convexHull(leftEye)
+			rightEyeHull = cv2.convexHull(rightEye)
+	#		cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+	#		cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+
+			# check to see if the eye aspect ratio is below the blink
+			# threshold, and if so, increment the blink frame counter
+			if ear < EYE_AR_THRESH:
+				COUNTER += 1
+
+			# otherwise, the eye aspect ratio is not below the blink
+			# threshold
+			else:
+				# if the eyes were closed for a sufficient number of
+				# then increment the total number of blinks
+				if COUNTER >= EYE_AR_CONSEC_FRAMES:
+					TOTAL += 1
+					plt.scatter(elapsed, ear, alpha = 0.3, s = 200)
+				# reset the eye frame counter
+				COUNTER = 0
+
+			
+			# draw the total number of blinks on the frame along with
+			# the computed eye aspect ratio for the frame
+			cv2.putText(frame, "Time: {}".format(elapsed), (10, 250),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+			cv2.putText(frame, "Blinks: {}".format(TOTAL), (10, 30),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+			cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+
+		# cv2.imshow("Frame", frame)
+		key = cv2.waitKey(1) & 0xFF
+		updateGraph(x, y)
+
+		# if the `q` key was pressed, break from the loop
+		if key == ord("q"):
+			break
+			# do a bit of cleanup
+
+	cv2.destroyAllWindows()
+	vs.stop()
+
+def faceReading():
+	# Count Time
+	start_time = time.time()
+
+	# loop over frames from the video stream
+	while True:
+		# if this is a file video stream, then we need to check if
+		# there any more frames left in the buffer to process
+		if fileStream and not vs.more():
+			break
+
+		# grab the frame from the threaded video file stream, resize
+		# it, and convert it to grayscale channels)
+		frame = vs.read()
+		frame = imutils.resize(frame, width=450)
+		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+		# detect faces in the grayscale frame
+		rects = detector(gray, 0)
+
+		# loop over the face detections
+		for rect in rects:
+			# determine the facial landmarks for the face region, then
+			# convert the facial landmark (x, y)-coordinates to a NumPy
+			# array
+			shape = predictor(gray, rect)
+			shape = face_utils.shape_to_np(shape)
+
+			# extract the face component coordinates, 
+			leftEye = shape[lStart:lEnd]
+			rightEye = shape[rStart:rEnd]
+			mouth = shape[mouth_S:mouth_E]
+			innerMouth = shape[inmouth_S:inmouth_E]
+			rightEyebrow = shape[eyebrowR_S:eyebrowR_E]
+			leftEyebrow = shape[eyebrowL_S:eyebrowL_E]
+			nose = shape[nose_S:nose_E]
+			jaw = shape[jaw_S:jaw_E]
+
+			#print(str(lStart) + " " + str(lEnd))
+			# average the eye aspect ratio together for both eyes
+			elapsed = time.time() - start_time
+			with open('test.csv', "a") as f:
+				writer = csv.writer(f)
+				writer.writerow(([elapsed] + [item for sublist in shape for item in sublist]))
+			# compute the convex hull for the left and right eye, then
+			# visualize each of the eyes
+			leftEyeHull = cv2.convexHull(leftEye)
+			rightEyeHull = cv2.convexHull(rightEye)
+			cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+			cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+			mouthHull = cv2.convexHull(mouth)
+			cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
+			innerMouthHull = cv2.convexHull(innerMouth)
+			cv2.drawContours(frame, [innerMouthHull], -1, (0, 0, 255), 1)
+			rightEyebrowHull = cv2.convexHull(rightEyebrow)
+			cv2.drawContours(frame, [rightEyebrowHull], -1, (0, 255, 0), 1)
+			leftEyebrowHull = cv2.convexHull(leftEyebrow)
+			cv2.drawContours(frame, [leftEyebrowHull], -1, (0, 255, 0), 1)
+			noseHull = cv2.convexHull(nose)
+			cv2.drawContours(frame, [noseHull], -1, (0, 255, 0), 1)
+			jawHull = cv2.convexHull(jaw)
+			cv2.drawContours(frame, [jawHull], -1, (0, 255, 0), 1)
+			
+			# draw the total number of blinks on the frame along with
+			# the computed eye aspect ratio for the frame
+			cv2.putText(frame, "Time: {}".format(elapsed), (10, 250),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+
+		cv2.imshow("Frame", frame)
+		key = cv2.waitKey(1) & 0xFF
+
+		# if the `q` key was pressed, break from the loop
+		if key == ord("q"):
+			break
+			# do a bit of cleanup
+
+	cv2.destroyAllWindows()
+	vs.stop()
+
+if __name__ == "__main__":
+
+	# construct the argument parse and parse the arguments
+	ap = argparse.ArgumentParser()
+	ap.add_argument("-p", "--shape-predictor", required=True,
+		help="path to facial landmark predictor")
+	ap.add_argument("-v", "--video", type=str, default="",
+		help="path to input video file")
+	args = vars(ap.parse_args())
+
+	# initialize dlib's face detector (HOG-based) and then create
+	# the facial landmark predictor
+	print("[INFO] loading facial landmark predictor...")
+	detector = dlib.get_frontal_face_detector()
+	predictor = dlib.shape_predictor(args["shape_predictor"])
+
+	# grab the indexes of the facial landmarks
+	(lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
+	(rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+	(mouth_S, mouth_E) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
+	(inmouth_S, inmouth_E) = face_utils.FACIAL_LANDMARKS_IDXS["inner_mouth"]
+	(eyebrowR_S, eyebrowR_E) = face_utils.FACIAL_LANDMARKS_IDXS["right_eyebrow"]
+	(eyebrowL_S, eyebrowL_E) = face_utils.FACIAL_LANDMARKS_IDXS["left_eyebrow"]
+	(nose_S, nose_E) = face_utils.FACIAL_LANDMARKS_IDXS["nose"]
+	(jaw_S, jaw_E) = face_utils.FACIAL_LANDMARKS_IDXS["jaw"]
+
+	# start the video stream thread
+	print("[INFO] starting video stream thread...")
+	
+	# Purpose for reading the video file
+	# vs = FileVideoStream(args["video"]).start()
+	# fileStream = True
+
+	# Purpose for streaming the video from the camera
+	vs = VideoStream(src=0).start()
+	# vs = VideoStream(usePiCamera=True).start()
+	fileStream = False
+	time.sleep(1.0)
+
+	# Execute the function
+	faceReading()
+
+	# Print the result
+#>>>>>>> main
