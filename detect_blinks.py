@@ -58,7 +58,7 @@ def eye_aspect_ratio(eye):
 def drawPartLine(frame, part):
 	PartHull = cv2.convexHull(part)
 	cv2.drawContours(frame, [PartHull], -1, (0, 255, 0), 1)
- 
+
 
 def videoReading():
 	# define two constants, one for the eye aspect ratio to indicate
@@ -213,12 +213,12 @@ def faceReading():
 				writer.writerow(([elapsed] + [item for sublist in shape for item in sublist]))
 			# compute the convex hull for the left and right eye, then
 			# visualize each of the eyes
-			drawPartLine(frame, Mouth)
-			drawPartLine(frame, inner_Mouth)
-			drawPartLine(frame, right_Eyebrow)
-			drawPartLine(frame, left_Eyebrow)
-			drawPartLine(frame, Nose)
-			drawPartLine(frame, Jaw)
+			drawPartLine(frame, mouth)
+			drawPartLine(frame, innerMouth)
+			drawPartLine(frame, rightEyebrow)
+			drawPartLine(frame, leftEyebrow)
+			drawPartLine(frame, nose)
+			drawPartLine(frame, jaw)
 			cv2.rectangle(frame, (rect.left(), rect.top()),
 				(rect.right(), rect.bottom()), (0,0,255), 2)
 			
@@ -273,7 +273,7 @@ if __name__ == "__main__":
 	# fileStream = True
 
 	# Purpose for streaming the video from the camera
-	vs = VideoStream(src=0).start()
+	vs = VideoStream(args["video"]).start()
 	# vs = VideoStream(usePiCamera=True).start()
 	fileStream = False
 	time.sleep(1.0)
