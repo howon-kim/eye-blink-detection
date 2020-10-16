@@ -292,13 +292,13 @@ if __name__ == "__main__":
 	print("[INFO] starting video stream thread...")
 	
 	# Purpose for reading the video file
-	# vs = FileVideoStream(args["video"]).start()
-	# fileStream = True
+	vs = FileVideoStream(args["video"]).start()
+	fileStream = True
 
 	# Purpose for streaming the video from the camera
-	vs = VideoStream(args["video"]).start()
+	# vs = VideoStream(args["video"]).start()
 	# vs = VideoStream(usePiCamera=True).start()
-	fileStream = False
+	# fileStream = False
 	time.sleep(1.0)
 
 	# Execute the function
