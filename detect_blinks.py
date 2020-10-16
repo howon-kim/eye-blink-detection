@@ -182,13 +182,13 @@ def faceReading():
 		# it, and convert it to grayscale channels)
 		frame = vs.read()
 		frame = imutils.resize(frame, width=450)
-		frame = imutils.rotate_bound(frame, 90)
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 		# detect faces in the grayscale frame
 		rects = detector(gray, 0)
 
 		#If find the square, resize the image
+		'''
 		if rects:
 			if rects[0].left() < 0:
 				xCorrection = rects[0].left() - 0
@@ -208,6 +208,7 @@ def faceReading():
 			frame = cv2.resize(frame, dsize=(200,200), interpolation=cv2.INTER_LINEAR)
 			gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 			rects = detector(gray, 0)
+		'''
 
 		# loop over the face detections
 		for rect in rects:
