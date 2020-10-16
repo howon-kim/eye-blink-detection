@@ -186,13 +186,27 @@ def faceReading():
 
 		# detect faces in the grayscale frame
 		rects = detector(gray, 0)
+
+		#If find the square, resize the image
 		if rects:
-			print("left : " + str(rects[0].left()) + ", right : " +str(rects[0].right()))
-			print("top : " + str(rects[0].top()) + ", bottom : " +str(rects[0].bottom()))
-			frameX = rects[0].left() + (rects[0].right() - rects[0].left())//2
-			frameY = rects[0].top() + (rects[0].bottom() - rects[0].top())//2
-			#frame = frame[frameX - 60: frameX + 60: frameY - 60: frameY + 60]
-			frame = frame[0: 200, 0: 200]
+			if rects[0].left() < 0:
+				xCorrection = rects[0].left() - 0
+			elif rects[0].right() > 450:
+				xCorrection = rects[0].right() - 450
+			else:
+				xCorrection = 0
+			if rects[0].top() < 0:
+				yCorrection = rects[0].top() - 0
+			elif rects[0].bottom() > 450:
+				yCorrection = rects[0].bottom() - 450
+			else:
+				yCorrection = 0
+			print(rects[0])
+			frame = frame[rects[0].top() - yCorrection: rects[0].bottom() - yCorrection,
+				rects[0].left() - xCorrection: rects[0].right() - xCorrection]
+			frame = cv2.resize(frame, dsize=(200,200), interpolation=cv2.INTER_LINEAR)
+			gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+			rects = detector(gray, 0)
 
 		# loop over the face detections
 		for rect in rects:
@@ -220,6 +234,8 @@ def faceReading():
 				writer.writerow(([elapsed] + [item for sublist in shape for item in sublist]))
 			# compute the convex hull for the left and right eye, then
 			# visualize each of the eyes
+			drawPartLine(frame, leftEye)
+			drawPartLine(frame, rightEye)
 			drawPartLine(frame, mouth)
 			drawPartLine(frame, innerMouth)
 			drawPartLine(frame, rightEyebrow)
