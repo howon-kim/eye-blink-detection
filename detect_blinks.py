@@ -182,6 +182,7 @@ def faceReading():
 		# it, and convert it to grayscale channels)
 		frame = vs.read()
 		frame = imutils.resize(frame, width=450)
+		frame = imutils.rotate_bound(frame, 90)
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 		# detect faces in the grayscale frame
@@ -242,8 +243,6 @@ def faceReading():
 			drawPartLine(frame, leftEyebrow)
 			drawPartLine(frame, nose)
 			drawPartLine(frame, jaw)
-			cv2.rectangle(frame, (rect.left(), rect.top()),
-				(rect.right(), rect.bottom()), (0,0,255), 2)
 			
 			# draw the total number of blinks on the frame along with
 			# the computed eye aspect ratio for the frame
