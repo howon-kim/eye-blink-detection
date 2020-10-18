@@ -54,10 +54,6 @@ def eye_aspect_ratio(eye):
 
 	# return the eye aspect ratio
 	return ear
-	
-def drawPartLine(frame, part):
-	PartHull = cv2.convexHull(part)
-	cv2.drawContours(frame, [PartHull], -1, (0, 255, 0), 1)
 
 
 def videoReading():
@@ -182,33 +178,11 @@ def faceReading():
 		# it, and convert it to grayscale channels)
 		frame = vs.read()
 		frame = imutils.resize(frame, width=450)
+		frame = imutils.rotate(frame, 270)
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 		# detect faces in the grayscale frame
 		rects = detector(gray, 0)
-
-		#If find the square, resize the image
-		'''
-		if rects:
-			if rects[0].left() < 0:
-				xCorrection = rects[0].left() - 0
-			elif rects[0].right() > 450:
-				xCorrection = rects[0].right() - 450
-			else:
-				xCorrection = 0
-			if rects[0].top() < 0:
-				yCorrection = rects[0].top() - 0
-			elif rects[0].bottom() > 450:
-				yCorrection = rects[0].bottom() - 450
-			else:
-				yCorrection = 0
-			print(rects[0])
-			frame = frame[rects[0].top() - yCorrection: rects[0].bottom() - yCorrection,
-				rects[0].left() - xCorrection: rects[0].right() - xCorrection]
-			frame = cv2.resize(frame, dsize=(200,200), interpolation=cv2.INTER_LINEAR)
-			gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-			rects = detector(gray, 0)
-		'''
 
 		# loop over the face detections
 		for rect in rects:
@@ -236,14 +210,22 @@ def faceReading():
 				writer.writerow(([elapsed] + [item for sublist in shape for item in sublist]))
 			# compute the convex hull for the left and right eye, then
 			# visualize each of the eyes
-			drawPartLine(frame, leftEye)
-			drawPartLine(frame, rightEye)
-			drawPartLine(frame, mouth)
-			drawPartLine(frame, innerMouth)
-			drawPartLine(frame, rightEyebrow)
-			drawPartLine(frame, leftEyebrow)
-			drawPartLine(frame, nose)
-			drawPartLine(frame, jaw)
+			leftEyeHull = cv2.convexHull(leftEye)
+			rightEyeHull = cv2.convexHull(rightEye)
+			cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+			cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+			mouthHull = cv2.convexHull(mouth)
+			cv2.drawContours(frame, [mouthHull], -1, (0, 255, 0), 1)
+			innerMouthHull = cv2.convexHull(innerMouth)
+			cv2.drawContours(frame, [innerMouthHull], -1, (0, 0, 255), 1)
+			rightEyebrowHull = cv2.convexHull(rightEyebrow)
+			cv2.drawContours(frame, [rightEyebrowHull], -1, (0, 255, 0), 1)
+			leftEyebrowHull = cv2.convexHull(leftEyebrow)
+			cv2.drawContours(frame, [leftEyebrowHull], -1, (0, 255, 0), 1)
+			noseHull = cv2.convexHull(nose)
+			cv2.drawContours(frame, [noseHull], -1, (0, 255, 0), 1)
+			jawHull = cv2.convexHull(jaw)
+			cv2.drawContours(frame, [jawHull], -1, (0, 255, 0), 1)
 			
 			# draw the total number of blinks on the frame along with
 			# the computed eye aspect ratio for the frame
@@ -296,7 +278,7 @@ if __name__ == "__main__":
 	fileStream = True
 
 	# Purpose for streaming the video from the camera
-	# vs = VideoStream(args["video"]).start()
+	# vs = VideoStream(src=0).start()
 	# vs = VideoStream(usePiCamera=True).start()
 	# fileStream = False
 	time.sleep(1.0)
