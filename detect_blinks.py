@@ -163,7 +163,17 @@ def videoReading():
 	cv2.destroyAllWindows()
 	vs.stop()
 
+
+
 def faceReading():
+	# define two constants, one for the eye aspect ratio to indicate
+	# blink and then a second constant for the number of consecutive
+	# frames the eye must be below the threshold
+	EYE_AR_THRESH = 0.22
+	EYE_AR_CONSEC_FRAMES = 3
+	# initialize the frame counters and the total number of blinks
+	COUNTER = 0
+	TOTAL = 0
 	# Count Time
 	start_time = time.time()
 
@@ -178,7 +188,6 @@ def faceReading():
 		# it, and convert it to grayscale channels)
 		frame = vs.read()
 		frame = imutils.resize(frame, width=450)
-		frame = imutils.rotate(frame, 270)
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 		# detect faces in the grayscale frame
@@ -195,6 +204,10 @@ def faceReading():
 			# extract the face component coordinates, 
 			leftEye = shape[lStart:lEnd]
 			rightEye = shape[rStart:rEnd]
+			leftEAR = eye_aspect_ratio(leftEye)
+			rightEAR = eye_aspect_ratio(rightEye)
+			# average the eye aspect ratio together for both eyes
+			ear = (leftEAR + rightEAR) / 2.0
 			mouth = shape[mouth_S:mouth_E]
 			innerMouth = shape[inmouth_S:inmouth_E]
 			rightEyebrow = shape[eyebrowR_S:eyebrowR_E]
@@ -226,6 +239,27 @@ def faceReading():
 			cv2.drawContours(frame, [noseHull], -1, (0, 255, 0), 1)
 			jawHull = cv2.convexHull(jaw)
 			cv2.drawContours(frame, [jawHull], -1, (0, 255, 0), 1)
+
+			# check to see if the eye aspect ratio is below the blink
+			# threshold, and if so, increment the blink frame counter
+			if ear < EYE_AR_THRESH:
+				COUNTER += 1
+			# otherwise, the eye aspect ratio is not below the blink
+			# threshold
+			else:
+			# if the eyes were closed for a sufficient number of
+			# then increment the total number of blinks
+				if COUNTER >= EYE_AR_CONSEC_FRAMES:
+					TOTAL += 1
+				# reset the eye frame counter
+				COUNTER = 0
+
+			# draw the total number of blinks on the frame along with
+			# the computed eye aspect ratio for the frame
+			cv2.putText(frame, "Blinks: {}".format(TOTAL), (10, 30),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+			cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 			
 			# draw the total number of blinks on the frame along with
 			# the computed eye aspect ratio for the frame
