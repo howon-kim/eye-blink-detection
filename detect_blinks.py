@@ -7,9 +7,9 @@ from scipy.spatial import distance as dist
 from imutils.video import FileVideoStream
 from imutils.video import VideoStream
 from imutils import face_utils
-from pyqtgraph.Qt import QtGui, QtCore
+#from pyqtgraph.Qt import QtGui, QtCore
 from numpy import *
-import pyqtgraph as pg
+#import pyqtgraph as pg
 import numpy as np
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -56,12 +56,12 @@ def eye_aspect_ratio(eye):
 	return ear
 
 
-def videoReading():
+def eyeReading():
 	# define two constants, one for the eye aspect ratio to indicate
 	# blink and then a second constant for the number of consecutive
 	# frames the eye must be below the threshold
-	EYE_AR_THRESH = 0.23 # 0.23 was the default.
-	EYE_AR_CONSEC_FRAMES = 3
+	EYE_AR_THRESH = 0.15 # 0.23 was the default.
+	EYE_AR_CONSEC_FRAMES = 2
 
 	# initialize the frame counters and the total number of blinks
 	COUNTER = 0
@@ -84,12 +84,10 @@ def videoReading():
 		# it, and convert it to grayscale
 		# channels)
 		frame = vs.read()
-
-		##frame = imutils.resize(frame, width=450)
+		frame = imutils.resize(frame, width=450)
 		
 		## Rotation IF NEEDED
-		frame = imutils.rotate(frame, 270, scale=1)
-
+		# frame = imutils.rotate(frame, 270, scale=1)
 		gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
 		# detect faces in the grayscale frame
@@ -121,8 +119,8 @@ def videoReading():
 			# visualize each of the eyes
 			leftEyeHull = cv2.convexHull(leftEye)
 			rightEyeHull = cv2.convexHull(rightEye)
-	#		cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-	#		cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+			cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+			cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 
 			# check to see if the eye aspect ratio is below the blink
 			# threshold, and if so, increment the blink frame counter
@@ -136,9 +134,15 @@ def videoReading():
 				# then increment the total number of blinks
 				if COUNTER >= EYE_AR_CONSEC_FRAMES:
 					TOTAL += 1
-					plt.scatter(elapsed, ear, alpha = 0.3, s = 200)
+					elapsed = time.time() - start_time
+					with open('s4.csv', "a+") as f:
+						writer = csv.writer(f)
+						writer.writerow(([elapsed] + [1]))
+			
 				# reset the eye frame counter
 				COUNTER = 0
+			
+
 
 			
 			# draw the total number of blinks on the frame along with
@@ -153,7 +157,7 @@ def videoReading():
 
 		# cv2.imshow("Frame", frame)
 		key = cv2.waitKey(1) & 0xFF
-		updateGraph(x, y)
+		# updateGraph(x, y)
 
 		# if the `q` key was pressed, break from the loop
 		if key == ord("q"):
@@ -273,16 +277,17 @@ if __name__ == "__main__":
 	print("[INFO] starting video stream thread...")
 	
 	# Purpose for reading the video file
-	# vs = FileVideoStream(args["video"]).start()
-	# fileStream = True
+	vs = FileVideoStream(args["video"]).start()
+	fileStream = True
 
 	# Purpose for streaming the video from the camera
-	vs = VideoStream(src=0).start()
+	# vs = VideoStream(src=0).start()
 	# vs = VideoStream(usePiCamera=True).start()
-	fileStream = False
+	# fileStream = False
 	time.sleep(1.0)
 
 	# Execute the function
-	faceReading()
+	eyeReading()
 
 	# Print the result
+	print("Total : " + TOTAL)
