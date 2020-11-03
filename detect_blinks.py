@@ -169,7 +169,7 @@ def faceReading():
 	# define two constants, one for the eye aspect ratio to indicate
 	# blink and then a second constant for the number of consecutive
 	# frames the eye must be below the threshold
-	EYE_AR_THRESH = 0.22
+	EYE_AR_THRESH = 0.23
 	EYE_AR_CONSEC_FRAMES = 3
 	# initialize the frame counters and the total number of blinks
 	COUNTER = 0
@@ -192,6 +192,11 @@ def faceReading():
 
 		# detect faces in the grayscale frame
 		rects = detector(gray, 0)
+		'''
+		if rects[0].left() < 0:
+			xCorrection
+			'''
+
 
 		# loop over the face detections
 		for rect in rects:
