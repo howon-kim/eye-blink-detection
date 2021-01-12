@@ -60,7 +60,7 @@ def eyeReading():
 	# define two constants, one for the eye aspect ratio to indicate
 	# blink and then a second constant for the number of consecutive
 	# frames the eye must be below the threshold
-	EYE_AR_THRESH = 0.22 # 0.23 was the default.
+	EYE_AR_THRESH = 0.16 # 0.23 was the default. 0.16 / 3(me). 0.20/2(haesul)
 	EYE_AR_CONSEC_FRAMES = 3
 
 	# initialize the frame counters and the total number of blinks
@@ -135,7 +135,7 @@ def eyeReading():
 				if COUNTER >= EYE_AR_CONSEC_FRAMES:
 					TOTAL += 1
 					elapsed = time.time() - start_time
-					with open('s4.csv', "a") as f:
+					with open('h3-2.csv', "a") as f:
 						writer = csv.writer(f)
 						writer.writerow(([elapsed] + [1]))
 			
@@ -155,7 +155,7 @@ def eyeReading():
 				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 
-		cv2.imshow("Frame", frame)
+		#cv2.imshow("Frame", frame)
 		key = cv2.waitKey(1) & 0xFF
 		# updateGraph(x, y)
 
@@ -281,9 +281,9 @@ if __name__ == "__main__":
 	fileStream = True
 
 	# Purpose for streaming the video from the camera
-	# vs = VideoStream(src=0).start()
-	# vs = VideoStream(usePiCamera=True).start()
-	# fileStream = False
+	#vs = VideoStream(src=0).start()
+	#vs = VideoStream(usePiCamera=True).start()
+	#fileStream = False
 	time.sleep(1.0)
 
 	# Execute the function
