@@ -122,6 +122,10 @@ def eyeReading():
 			cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
 			cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 
+			elapsed = time.time() - start_time
+			with open('k32.csv', "a") as f:
+				writer = csv.writer(f)
+				writer.writerow(([elapsed] + [ear]))
 			# check to see if the eye aspect ratio is below the blink
 			# threshold, and if so, increment the blink frame counter
 			if ear < EYE_AR_THRESH:
@@ -129,20 +133,21 @@ def eyeReading():
 
 			# otherwise, the eye aspect ratio is not below the blink
 			# threshold
+			"""
 			else:
 				# if the eyes were closed for a sufficient number of
 				# then increment the total number of blinks
 				if COUNTER >= EYE_AR_CONSEC_FRAMES:
 					TOTAL += 1
 					elapsed = time.time() - start_time
-					with open('h3-2.csv', "a") as f:
+					with open('n2.csv', "a") as f:
 						writer = csv.writer(f)
 						writer.writerow(([elapsed] + [1]))
 			
 				# reset the eye frame counter
 				COUNTER = 0
 			
-
+"""
 
 			
 			# draw the total number of blinks on the frame along with
